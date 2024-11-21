@@ -573,7 +573,7 @@ export default class V2 {
     }
 
     /**
-     * @param {...(V2 | Iterable | number | ArrayBuffer | Float32Array)} args
+     * @param {...(V2 | Iterable | number | boolean | ArrayBuffer | Float32Array)} args
      */
     mult(...args){
         const vec = V2.new(...args)

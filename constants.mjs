@@ -6,6 +6,7 @@ export const
     decel = 0.0001,
     speed = 0.5,
     jumpBuffer = 500,
+    bounceBuffer = 100,
     frameTime = 1000/120,
     gravity = 0.001,
     cameraSpeed = 0.0001,

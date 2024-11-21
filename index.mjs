@@ -12,7 +12,7 @@ import {
     jumpBuffer,
     frameTime,
     gravity,
-    cameraDamp, cameraSpeed, cameraLookahead, tolerance,
+    cameraDamp, cameraSpeed, cameraLookahead, tolerance, bounceBuffer,
 } from "./constants.mjs"
 import {Arc} from "./Arc.mjs"
 import Meth from "./Meth.mjs"
@@ -304,8 +304,10 @@ addEventListener("wheel", e => {
 })
 
 let surfaceNorm = null
+let airTime = 0
+let lastSurfaceVel = null
+let touchingPreviously = false
 let surfaceTime = 0
-let surfaceVel = null
 
 
 function simulate(dt){
@@ -315,16 +317,18 @@ function simulate(dt){
     const frictionType = (player.vel.x - targetVel)*direction > 0
     const friction = accel*(1 - frictionType) + decel*frictionType
     dv.x += (targetVel - player.vel.x)*friction
-    if(surfaceTime > 0 && jumpTime > 0){
-        player.vel.add(surfaceNorm.xy.mult(jumpPow - surfaceVel*reflectPow))
+    if(airTime > 0 && jumpTime > 0){
+        player.vel.add(surfaceNorm.xy.mult(jumpPow - lastSurfaceVel*reflectPow*(surfaceTime > 0)))
         jumpTime = 0
-        surfaceTime = 0
+        airTime = 0
     }
 
 
     jumpTime -= dt
+    airTime -= dt
     surfaceTime -= dt
 
+    let touching = false
     player.vel.add(dv.mult(dt))
     const nextVel = player.vel.xy.mult(dt)
     for(const wall of walls){
@@ -339,10 +343,15 @@ function simulate(dt){
             player.pos.xy.add(nextVel.xy.mult(wall.future0)).sub(wall.p0).dot(para) >= 0 &&
             player.pos.xy.add(nextVel.xy.mult(wall.future1)).sub(wall.p1).dot(para) <= 0
         ){
-            surfaceVel = player.vel.dot(perp)
+            touching = true
+            let surfaceVel = player.vel.dot(perp)
+            if(!touchingPreviously) {
+                lastSurfaceVel = surfaceVel
+                surfaceTime = bounceBuffer
+            }
             nextVel.sub(perp.xy.mult(futureDist))
             surfaceNorm = perp
-            surfaceTime = coyoteTime
+            airTime = coyoteTime
             player.vel.sub(perp.xy.mult(surfaceVel))
         }
     }
@@ -360,12 +369,13 @@ function simulate(dt){
                 futureDist - tolerance < 0 &&
                 futureDist < currentDist
             ){
+                touching = true
                 const norm = dir.xy.negate()
-                surfaceVel = player.vel.dot(norm)
-                player.vel.sub(norm.xy.mult(surfaceVel))
+                lastSurfaceVel = player.vel.dot(norm)
+                player.vel.sub(norm.xy.mult(lastSurfaceVel))
                 nextVel.sub(norm.xy.mult(futureDist))
                 surfaceNorm = norm
-                surfaceTime = coyoteTime
+                airTime = coyoteTime
             }
         }
 
@@ -379,14 +389,16 @@ function simulate(dt){
                 futureDist - tolerance < 0 &&
                 futureDist < currentDist
             ){
-                surfaceVel = player.vel.dot(dir)
-                player.vel.sub(dir.xy.mult(surfaceVel))
+                touching = true
+                lastSurfaceVel = player.vel.dot(dir)
+                player.vel.sub(dir.xy.mult(lastSurfaceVel))
                 nextVel.sub(dir.xy.mult(futureDist))
                 surfaceNorm = dir
-                surfaceTime = coyoteTime
+                airTime = coyoteTime
             }
         }
     }
+    touchingPreviously = touching
     player.pos.add(nextVel)
 
     const cameraAccel = V2.zero()
