@@ -35,10 +35,18 @@ const arcs = new Set([
     // new Arc(V2.new(600, 570), 0, -0.25*Meth.TAU, 0.25*Meth.TAU)
 ])
 
+const goomba = new Image()
+goomba.src = "./goomba.png"
+
+const sprites = new Set([
+    // new Sprite(goomba, V2.new(700, 500), V2.new(100, 100), Meth.TAU/8)
+])
+
 function serialize(){
     const obj = {
         walls: [],
         arcs: [],
+        sprites: [],
     }
     for(const wall of walls){
         obj.walls.push({
@@ -56,7 +64,17 @@ function serialize(){
             y: arc.pos.y,
             r: arc.radius,
             start: arc.start,
-            end: arc.end
+            end: arc.end,
+        })
+    }
+    for(const sprite of sprites){
+        obj.sprites.push({
+            x: sprite.pos.x,
+            y: sprite.pos.y,
+            w: sprite.size.x,
+            h: sprite.size.y,
+            rot: sprite.rotation,
+            src: sprite.img.src,
         })
     }
     return JSON.stringify(obj)
@@ -68,17 +86,17 @@ function deserialize(dat){
     for(const wall of obj.walls){
         walls.add(new Wall(V2.new(wall.x0, wall.y0), V2.new(wall.x1, wall.y1), wall.future0, wall.future1))
     }
+    arcs.clear()
     for(const arc of obj.arcs){
         arcs.add(new Arc(V2.new(arc.x, arc.y), arc.r, arc.start, arc.end))
     }
+    sprites.clear()
+    for(const sprite of obj.sprites){
+        const img = new Image()
+        img.src = sprite.src
+        sprites.add(new Sprite(img, V2.new(sprite.x, sprite.y), V2.new(sprite.w, sprite.h), sprite.rot))
+    }
 }
-
-const goomba = new Image()
-goomba.src = "./goomba.png"
-
-const sprites = new Set([
-    new Sprite(goomba, V2.new(700, 500), V2.new(100, 100), Meth.TAU/8)
-])
 
 let jumpTime = 0
 let direction = 0
@@ -385,9 +403,13 @@ const cameraVel = V2.zero()
 
 let t = performance.now()
 let simTime = t
+let maxTicks = 100
 function render() {
     t = performance.now()
     while(simTime < t){
+        if((t - simTime)/frameTime > maxTicks){
+            simTime = t
+        }
         simulate(frameTime)
         simTime += frameTime
     }
