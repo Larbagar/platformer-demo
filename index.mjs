@@ -228,8 +228,8 @@ addEventListener("mousemove", e => {
     }
     if(e.buttons & 0b10 && lastPos){
         for(const wall of walls){
-            const t0 = rayIntersectionTime(wall.p0, wall.p1.xy.sub(wall.p0), lastPos, lastPos.xy.sub(pos))
-            const t1 = rayIntersectionTime(lastPos, lastPos.xy.sub(pos), wall.p0, wall.p1.xy.sub(wall.p0))
+            const t0 = rayIntersectionTime(wall.p0, wall.p1.xy.sub(wall.p0), lastPos, pos.xy.sub(lastPos))
+            const t1 = rayIntersectionTime(lastPos, pos.xy.sub(lastPos), wall.p0, wall.p1.xy.sub(wall.p0))
             if(0 <= t0 && t0 <= 1 && 0 <= t1 && t1 <= 1){
                 for(const arc of arcs){
                     if(
